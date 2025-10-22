@@ -14,6 +14,7 @@ class BaseConfig:
     MARGIN_LEFT: int = 500
     MARGIN_RIGHT: int = 500
 
+    # colors can be a HEXA value or RGB tuple
     BACKGROUND_COLOR: str | tuple = "#000000"  # wallpaper background
     GRID_COLOR: str | tuple = "#141414"
 

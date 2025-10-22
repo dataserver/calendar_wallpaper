@@ -104,7 +104,7 @@ wallpaper_manager/                        # Root directory of the project
 
 Customize your calendar by editing `config.py`:
 
-- `BACKGROUND_COLOR`: Hex code or RGB tuple for background (e.g., `"#2e2e2e"` or (46,46,46))
+- `BACKGROUND_COLOR`: Hex code or RGB tuple for background
 - `GRID_COLOR`: Calendar grid color
 - `TEXT_COLOR`: General color for Month's Title, Day of Week and Day's Digit color
 - `EVENT_COLOR`: Color for list of events
@@ -114,16 +114,22 @@ Customize your calendar by editing `config.py`:
 - `WALLPAPER_FILE`: Output path for generated image
 - `EVENTS_DB_FILE`: SQLite database path
 
-> 💡 **Tip**: Use dark backgrounds with light text for better readability as a wallpaper!
+> ⚠️ Colors can be hexa `"#2e2e2e"` values or RGB in tuple `(46,46,46)`
 
+> 💡 **Tip**: Use dark backgrounds with light text for better readability as a wallpaper!
 ---
 
 ## 🖥️ Command-Line Usage
 
-Generate a calendar for the current month:
+Generate a calendar for the current month (image stored in `output/` folder):
 
 ```bash
 python -m cli.cli
+```
+
+Generate a calendar image and set it as desktop wallpaper:
+```bash
+python -m cli.cli --wallpaper
 ```
 
 ### Options
