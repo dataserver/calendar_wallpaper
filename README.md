@@ -97,7 +97,7 @@ wallpaper_manager/                        # Root directory of the project
 └── uv.lock                               # uv project lock file (used for project environment management)
 
 ```
-
+ 
 ---
 
 ## ⚙️ Configuration (`config.py`)
