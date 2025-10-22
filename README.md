@@ -103,7 +103,8 @@ wallpaper_manager/                        # Root directory of the project
 ## ⚙️ Configuration (`config.py`)
 
 Customize your calendar by editing `config.py`:
-
+- `IMG_WIDTH`: Wallpaper image width
+- `IMG_HEIGHT`: Wallpaper image height
 - `BACKGROUND_COLOR`: Hex code or RGB tuple for background
 - `GRID_COLOR`: Calendar grid color
 - `TEXT_COLOR`: General color for Month's Title, Day of Week and Day's Digit color
