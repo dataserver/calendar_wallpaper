@@ -164,7 +164,7 @@ python -m gui.gui
 
 ## 📝 Event Formats
 
-### SQLite Database (Recommended)
+### SQLite Database
 Table schema:
 ```sql
 CREATE TABLE events (
