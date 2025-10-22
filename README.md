@@ -1,6 +1,6 @@
 # 📅 Calendar Wallpaper Generator
 
-A Python application that generates beautiful calendar images with your events and optionally sets them as your desktop wallpaper. Comes with both a **command-line interface** and a **graphical user interface (GUI)** for easy event management.
+A Python application that generates calendar images with your events and optionally sets them as your desktop wallpaper. Comes with both a **command-line interface** and a **graphical user interface (GUI)** for easy event management.
 
 GUI
 
