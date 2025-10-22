@@ -189,10 +189,6 @@ Included `run_generator.bat` to execute the python script using virtual envirome
 
 ## 📜 License
 
-UNLICENSE — feel free to use, modify, and distribute!
-
-
-
 ## Roboto Font
 
 The Roboto font is copyrighted by Google and licensed under the Open Font License, [OFL License v1.1](https://openfontlicense.org/documents/OFL.txt).
