@@ -181,7 +181,7 @@ CREATE TABLE events (
 
 ## Automation
 
-Example use Task Scheduler to execute `.bat` or bash `.sh` script to generate and set the calendar wallpaper on user login.
+Example use Task Scheduler to execute `.bat` script to generate and set the calendar wallpaper on user login.
 
 Included `run_cli.bat` to execute the python script using virtual enviroment `.venv/` that can be used with Task Scheduler.
 
