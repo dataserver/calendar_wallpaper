@@ -30,7 +30,7 @@ Desktop with Calendar Wallpaper
 
 ## 📦 Requirements
 
-- Python 3.7+
+- Python
 - Required packages:
   - `Pillow` (for image generation)
   - `tkcalendar` (for GUI date picker)
