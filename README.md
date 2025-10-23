@@ -139,13 +139,13 @@ python -m cli.cli --wallpaper
 |------|-------------|---------|
 | `--year`,`-y` | Specify year | `--year 2025` |
 | `--month`,`-m` | Specify month (1–12) | `--month 12` |
-| `--start-week`,`-sw` | First day: `sun` (default) or `mon` | `--start-week mon` |
+| `--start-of-week`,`-sw` | First day: `sun` (default) or `mon` | `--start-of-week mon` |
 | `--wallpaper`,`-w` | Set output as desktop wallpaper | `--wallpaper` |
 | `--database`,`-d` | Custom SQLite path | `--db my_events.db` |
 
 **Example**:  
 ```bash
-python -m cli.cli --year 2024 --month 12 --start-week mon --wallpaper --database events.db
+python -m cli.cli --year 2024 --month 12 --start-of-week mon --wallpaper --database events.db
 ```
 
 ---

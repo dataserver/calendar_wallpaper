@@ -28,14 +28,14 @@ def publish_calendar_image(
         should_set_wallpaper (bool): Flag to set the generated image as wallpaper.
     """
 
-    start_weekday = calendar.SUNDAY if start_of_week == "sun" else calendar.MONDAY
+    start_of_week = calendar.SUNDAY if start_of_week == "sun" else calendar.MONDAY
 
     # Generate calendar image
     app = CalendarImageGen(Config)
     # Read events from DB
     events = app.read_events_db(app.cfg.EVENTS_DB_FILE)
-    logger.debug(f"{year}, {month}, {events}, {start_weekday}")
-    app.draw_calendar(year, month, events, start_weekday)
+    logger.debug(f"{year}, {month}, {events}, {start_of_week}")
+    app.draw_calendar(year, month, events, start_of_week)
 
     # If user requested, set the calendar image as wallpaper
     if update_wallpaper:

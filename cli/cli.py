@@ -30,7 +30,7 @@ def parse_args():
     )
     opt(
         "-s",
-        "--start-week",
+        "--start-of-week",
         choices=["mon", "sun"],
         default="sun",
         help="Start of week: 'mon' for Monday, 'sun' for Sunday (default: sun)",

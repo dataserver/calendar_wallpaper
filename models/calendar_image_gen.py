@@ -62,13 +62,13 @@ class CalendarImageGen:
         year: int,
         month: int,
         events: dict[datetime.date, list[str]],
-        start_weekday: int,
+        start_of_week: int,
     ) -> None:
         """
         Generates a calendar image for the specified month and year, including events.
         """
         logger.info(f"Generating calendar for {calendar.month_name[month]} {year}.")
-        calendar.setfirstweekday(start_weekday)
+        calendar.setfirstweekday(start_of_week)
 
         # Get today's date for highlighting
         today = datetime.today().date()
@@ -112,7 +112,7 @@ class CalendarImageGen:
         ) / len(month_grid)  # Rows are weeks
 
         # 3. Draw the weekday headers (Mon, Tue, ..., Sun)
-        self.draw_weekday_headers(draw, day_font, cell_width, start_weekday)
+        self.draw_weekday_headers(draw, day_font, cell_width, start_of_week)
 
         # 4. Draw the day boxes (with events if any)
         self.draw_day_boxes_and_events(
@@ -171,14 +171,14 @@ class CalendarImageGen:
         draw: ImageDraw.ImageDraw,
         day_font: ImageFont.ImageFont,
         cell_width: float,
-        start_weekday: int,
+        start_of_week: int,
     ) -> None:
         """
         Draws the weekday headers (Mon, Tue, ..., Sun) on the calendar.
         """
         weekdays = []
         for i in range(7):
-            day_index = (start_weekday + i) % 7
+            day_index = (start_of_week + i) % 7
             weekdays.append(calendar.day_abbr[day_index])
 
         for i, day_name in enumerate(weekdays):
