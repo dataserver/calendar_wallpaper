@@ -233,22 +233,70 @@ class CalendarImageGen:
     ) -> None:
         """
         Draws the day boxes and event names on the calendar.
+        Fills leading empty cells in the first row with previous month's last days
+        and trailing empty cells in the last row with next month's starting days.
+        Events are shown for current, previous, and next-month days if present in event_dict.
         """
+        # Compute previous and next month/year
+        prev_month = month - 1 if month > 1 else 12
+        prev_year = year if month > 1 else year - 1
+        next_month = month + 1 if month < 12 else 1
+        next_year = year if month < 12 else year + 1
+
+        # Number of days in previous month
+        prev_month_days = calendar.monthrange(prev_year, prev_month)[1]
+
         for week_idx, week_days in enumerate(month_calendar):
+            # Precompute leading zeros (for first week) and trailing zeros (for last week)
+            if week_idx == 0:
+                leading_zeros = sum(1 for d in week_days if d == 0)
+            else:
+                leading_zeros = 0
+
             for day_idx, day_of_month in enumerate(week_days):
                 cell_left = self.cfg.MARGIN_LEFT + day_idx * cell_width
                 cell_top = self.cfg.MARGIN_TOP + 100 + week_idx * cell_height
                 cell_right = cell_left + cell_width
                 cell_bottom = cell_top + cell_height
 
-                # Determine if this cell represents today
+                # Default assumptions
+                in_current_month = True
+                display_day_str = ""
                 is_current_day = False
-                if day_of_month != 0:
-                    cell_date = datetime(year, month, day_of_month).date()
-                    if cell_date == today:
-                        is_current_day = True
+                actual_date_for_events = None
 
-                # Fill the cell background if it's the current day
+                if day_of_month != 0:
+                    # Regular current-month day
+                    display_day = day_of_month
+                    display_day_str = str(display_day)
+                    actual_date_for_events = datetime(year, month, display_day).date()
+                    if actual_date_for_events == today:
+                        is_current_day = True
+                else:
+                    # Adjacent-month day (either prev or next month)
+                    in_current_month = False
+                    # Leading zeros in the first week -> previous month's last days
+                    if week_idx == 0:
+                        pos = sum(1 for d in week_days[:day_idx] if d == 0)
+                        display_day = prev_month_days - leading_zeros + 1 + pos
+                        display_day_str = str(display_day)
+                        actual_date_for_events = datetime(
+                            prev_year, prev_month, display_day
+                        ).date()
+                    # Trailing zeros in the last week -> next month's starting days
+                    elif week_idx == len(month_calendar) - 1:
+                        pos = sum(1 for d in week_days[:day_idx] if d == 0)
+                        display_day = pos + 1
+                        display_day_str = str(display_day)
+                        actual_date_for_events = datetime(
+                            next_year, next_month, display_day
+                        ).date()
+                    else:
+                        # Middle-week zeros (rare) left blank with no events
+                        display_day_str = ""
+                        actual_date_for_events = None
+
+                # Fill the cell background if it's the current day (only for days in the displayed month)
                 if is_current_day:
                     draw.rectangle(
                         [cell_left, cell_top, cell_right, cell_bottom],
@@ -264,66 +312,52 @@ class CalendarImageGen:
                         width=2,
                     )
 
-                if (
-                    day_of_month != 0
-                ):  # Only draw for valid days (0 means no day in this cell)
-                    date_object = datetime(year, month, day_of_month).date()
-                    day_number_x_offset = 7  # Horizontal padding for the day number
-                    day_number_y_offset = 5  # Vertical padding for the day number
-
-                    # Choose text color: keep original for non-current, or enhance contrast if needed
-                    day_text_color = self.cfg.TEXT_COLOR
-
-                    # Draw the day number inside the cell
+                # Draw the day number (dim non-current-month days)
+                if display_day_str:
+                    day_text_color = (
+                        self.cfg.TEXT_COLOR
+                        if in_current_month
+                        else tuple(max(0, int(c * 0.5)) for c in self.cfg.TEXT_COLOR)
+                    )
                     draw.text(
-                        (
-                            cell_left + day_number_x_offset,
-                            cell_top + day_number_y_offset,
-                        ),
-                        str(day_of_month),
+                        (cell_left + 7, cell_top + 5),
+                        display_day_str,
                         fill=day_text_color,
                         font=day_font,
                     )
 
-                    # Check and draw events for the day
-                    if date_object in event_dict:
-                        event_y_position = (
-                            cell_top + 25
-                        )  # Vertical position for the first event
-                        event_x_offset = 10  # Horizontal padding for events
-
-                        # Maximum width for events inside the cell
-                        max_event_width = (
-                            cell_width - 20
-                        )  # Padding for left and right edges
-                        fill_color = (
-                            self.cfg.TODAY_EVENT_COLOR
-                            if is_current_day
-                            else self.cfg.EVENT_COLOR
+                # Draw events for any actual_date_for_events found (current, previous, or next month)
+                if actual_date_for_events and actual_date_for_events in event_dict:
+                    event_y_position = cell_top + 25
+                    event_x_offset = 10
+                    max_event_width = cell_width - 20
+                    # Use TODAY_EVENT_COLOR only if the date equals today
+                    fill_color = (
+                        self.cfg.TODAY_EVENT_COLOR
+                        if actual_date_for_events == today
+                        else self.cfg.EVENT_COLOR
+                    )
+                    # Optionally dim event color for non-current-month events:
+                    if not in_current_month and actual_date_for_events != today:
+                        fill_color = tuple(max(0, int(c * 0.6)) for c in fill_color)
+                    for event in event_dict[actual_date_for_events]:
+                        wrapped_event = self.wrap_text(
+                            event, max_event_width, event_font
                         )
-                        for event in event_dict[date_object]:
-                            # Wrap the event text to fit within the cell width
-                            wrapped_event = self.wrap_text(
-                                event, max_event_width, event_font
+                        for line in wrapped_event:
+                            draw.text(
+                                (cell_left + event_x_offset, event_y_position),
+                                line,
+                                fill=fill_color,
+                                font=event_font,
                             )
-
-                            # Draw each wrapped line within the same day cell
-                            for line in wrapped_event:
-                                draw.text(
-                                    (cell_left + event_x_offset, event_y_position),
-                                    line,
-                                    fill=fill_color,
-                                    font=event_font,
-                                )
-                                event_y_position += (
-                                    12  # Vertical spacing between event text lines
-                                )
-
-                            # Ensure events don't overflow past the bottom of the cell
-                            if event_y_position > cell_bottom:
-                                logger.warning(
-                                    f"Event text overflowed in cell: {date_object}."
-                                )
-                                break  # Stop drawing events if the cell's bottom is reached
+                            event_y_position += 12
+                        if event_y_position > cell_bottom:
+                            logger.warning(
+                                f"Event text overflowed in cell: {actual_date_for_events}."
+                            )
+                            break
                 else:
-                    logger.debug(f"Skipping empty cell for day {day_of_month}.")
+                    logger.debug(
+                        f"Non-current-month or empty cell at week {week_idx}, col {day_idx}."
+                    )

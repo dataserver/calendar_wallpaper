@@ -41,12 +41,12 @@ if %ERRORLEVEL% neq 0 (
 )
 
 
-:: Run the CLI script
-echo Running CLI script...
+:: Run the GUI script
+echo Running GUI script...
 python -m gui.gui
 
 if %ERRORLEVEL% neq 0 (
-    echo CLI script execution failed. Exiting.
+    echo GUI script execution failed. Exiting.
     pause
     exit /b
 )
