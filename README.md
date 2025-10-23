@@ -10,7 +10,7 @@ GUI
 
 Desktop with Calendar Wallpaper
 
-<img src="assets/screenshot_wallpaper.png" alt="Desktop" width="360"/>
+<img src="assets/screenshot_desktop.png" alt="Desktop" width="360"/>
 
 
 
