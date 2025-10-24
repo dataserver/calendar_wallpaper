@@ -58,6 +58,6 @@ class DevConfig(BaseConfig):
     EVENTS_DB_FILE: Path = APP_DIR / ".dev" / "dev.sqlite3"
 
 
-Config: BaseConfig = DevConfig
+Config: BaseConfig = ProdConfig
 
 __all__ = ["Config"]
