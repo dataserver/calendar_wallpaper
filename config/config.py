@@ -10,7 +10,7 @@ class BaseConfig:
 
     # Calendar margins (in pixels)
     MARGIN_TOP: int = 50
-    MARGIN_BOTTOM: int = 500
+    MARGIN_BOTTOM: int = 450
     MARGIN_LEFT: int = 500
     MARGIN_RIGHT: int = 500
 
