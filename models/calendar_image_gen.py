@@ -1,6 +1,6 @@
 import calendar
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -56,6 +56,47 @@ class CalendarImageGen:
             logger.error(f"Failed to read events from database: {db_path}. Error: {e}")
         return events
 
+    # ------------- CALENDAR GRID GENERATION ----------------
+    def generate_calendar_grid(
+        self, year: int, month: int, start_of_week: int
+    ) -> list[list[datetime.date]]:
+        """
+        Generates a 6x7 grid of datetime.date objects for the calendar.
+        Days outside the target month are represented as actual dates from adjacent months.
+        Returns a list of 6 weeks, each with 7 days (dates).
+        """
+        # Set the first weekday
+        cal = calendar.Calendar(firstweekday=start_of_week)
+        # Get all days in the month as date objects
+        month_dates = cal.itermonthdates(year, month)
+        # This returns ~6 weeks of dates, including prev/next month
+        all_dates = list(month_dates)
+
+        min_days = self.cfg.CALENDAR_MIN_NUM_ROWS * 7  # e.g., 6 * 7 = 42
+
+        if len(all_dates) < min_days:
+            # Pad with next month days until we reach min_days
+            last_date = all_dates[-1]
+            while len(all_dates) < min_days:
+                last_date += timedelta(days=1)
+                all_dates.append(last_date)
+        # If >= min_days, use as-is (no truncation)
+
+        # Split into weeks
+        weeks = []
+        for i in range(0, len(all_dates), 7):
+            week = all_dates[i : i + 7]
+            # Ensure every week has exactly 7 days (should always be true)
+            if len(week) == 7:
+                weeks.append(week)
+            else:
+                # Safety: pad incomplete final week (shouldn't happen)
+                while len(week) < 7:
+                    week.append(week[-1] + timedelta(days=1))
+                weeks.append(week)
+
+        return weeks
+
     # ------------- DRAW CALENDAR ----------------
     def draw_calendar(
         self,
@@ -73,7 +114,7 @@ class CalendarImageGen:
         # Get today's date for highlighting
         today = datetime.today().date()
 
-        # Create a new blank image with the specified background color
+        # Create image
         calendar_image = Image.new(
             "RGB",
             (self.cfg.IMG_WIDTH, self.cfg.IMG_HEIGHT),
@@ -81,10 +122,10 @@ class CalendarImageGen:
         )
         draw = ImageDraw.Draw(calendar_image)
 
-        # Load the fonts required for the title, days, and events
+        # Load fonts
         title_font, day_font, event_font = self.load_fonts()
 
-        # 1. Draw the calendar title (Month Year)
+        # 1. Draw title
         month_year_title = f"{calendar.month_name[month]} {year}"
         title_width, title_height = self.get_text_size(
             draw, month_year_title, title_font
@@ -100,26 +141,27 @@ class CalendarImageGen:
             font=title_font,
         )
 
-        # 2. Set up the grid for the calendar
-        month_grid = calendar.monthcalendar(year, month)
+        # 2. Generate 6-week date grid
+        date_grid = self.generate_calendar_grid(year, month, start_of_week)
+        num_rows = len(date_grid)
 
-        # Calculate the width and height of each calendar cell (day box)
+        # 3. Calculate cell dimensions (always 6 rows)
         cell_width = (
             self.cfg.IMG_WIDTH - self.cfg.MARGIN_LEFT - self.cfg.MARGIN_RIGHT
-        ) / 7  # 7 days in a week
+        ) / 7
         cell_height = (
             self.cfg.IMG_HEIGHT - self.cfg.MARGIN_TOP - self.cfg.MARGIN_BOTTOM - 100
-        ) / len(month_grid)  # Rows are weeks
+        ) / num_rows  # Use actual row count (≥ MIN)
 
-        # 3. Draw the weekday headers (Mon, Tue, ..., Sun)
+        # 4. Draw weekday headers
         self.draw_weekday_headers(draw, day_font, cell_width, start_of_week)
 
-        # 4. Draw the day boxes (with events if any)
+        # 5. Draw day boxes and events
         self.draw_day_boxes_and_events(
             draw,
             year,
             month,
-            month_grid,
+            date_grid,
             events,
             cell_width,
             cell_height,
@@ -128,7 +170,7 @@ class CalendarImageGen:
             today,  # Pass today's date for comparison
         )
 
-        # 5. Save the generated calendar image to a file
+        # 6. Save image
         calendar_image.save(self.cfg.WALLPAPER_FILE)
         logger.info(f"✅ Calendar image saved as {self.cfg.WALLPAPER_FILE}")
 
@@ -223,128 +265,82 @@ class CalendarImageGen:
         draw: ImageDraw.ImageDraw,
         year: int,
         month: int,
-        month_calendar: list[list[int]],
+        date_grid: list[list[datetime.date]],
         event_dict: dict[datetime.date, list[str]],
         cell_width: float,
         cell_height: float,
         day_font: ImageFont.ImageFont,
         event_font: ImageFont.ImageFont,
-        today: datetime.date,  # Added today's date for highlighting
+        today: datetime.date,
     ) -> None:
         """
-        Draws the day boxes and event names on the calendar.
-        Fills leading empty cells in the first row with previous month's last days
-        and trailing empty cells in the last row with next month's starting days.
-        Events are shown for current, previous, and next-month days if present in event_dict.
+        Draws calendar cells using actual datetime.date objects.
+        Handles current/adjacent months and event rendering.
         """
-        # Compute previous and next month/year
-        prev_month = month - 1 if month > 1 else 12
-        prev_year = year if month > 1 else year - 1
-        next_month = month + 1 if month < 12 else 1
-        next_year = year if month < 12 else year + 1
-
-        # Number of days in previous month
-        prev_month_days = calendar.monthrange(prev_year, prev_month)[1]
-
-        for week_idx, week_days in enumerate(month_calendar):
-            # Precompute leading zeros (for first week) and trailing zeros (for last week)
-            if week_idx == 0:
-                leading_zeros = sum(1 for d in week_days if d == 0)
-            else:
-                leading_zeros = 0
-
-            for day_idx, day_of_month in enumerate(week_days):
+        for week_idx, week_dates in enumerate(date_grid):
+            for day_idx, actual_date in enumerate(week_dates):
                 cell_left = self.cfg.MARGIN_LEFT + day_idx * cell_width
                 cell_top = self.cfg.MARGIN_TOP + 100 + week_idx * cell_height
                 cell_right = cell_left + cell_width
                 cell_bottom = cell_top + cell_height
 
-                # Default assumptions
-                in_current_month = True
-                display_day_str = ""
-                is_current_day = False
-                actual_date_for_events = None
+                in_current_month = (
+                    actual_date.year == year and actual_date.month == month
+                )
+                is_current_day = actual_date == today
 
-                if day_of_month != 0:
-                    # Regular current-month day
-                    display_day = day_of_month
-                    display_day_str = str(display_day)
-                    actual_date_for_events = datetime(year, month, display_day).date()
-                    if actual_date_for_events == today:
-                        is_current_day = True
-                else:
-                    # Adjacent-month day (either prev or next month)
-                    in_current_month = False
-                    # Leading zeros in the first week -> previous month's last days
-                    if week_idx == 0:
-                        pos = sum(1 for d in week_days[:day_idx] if d == 0)
-                        display_day = prev_month_days - leading_zeros + 1 + pos
-                        display_day_str = str(display_day)
-                        actual_date_for_events = datetime(
-                            prev_year, prev_month, display_day
-                        ).date()
-                    # Trailing zeros in the last week -> next month's starting days
-                    elif week_idx == len(month_calendar) - 1:
-                        pos = sum(1 for d in week_days[:day_idx] if d == 0)
-                        display_day = pos + 1
-                        display_day_str = str(display_day)
-                        actual_date_for_events = datetime(
-                            next_year, next_month, display_day
-                        ).date()
-                    else:
-                        # Middle-week zeros (rare) left blank with no events
-                        display_day_str = ""
-                        actual_date_for_events = None
-
-                # Fill the cell background if it's the current day (only for days in the displayed month)
+                # Draw cell background
                 if is_current_day:
                     draw.rectangle(
                         [cell_left, cell_top, cell_right, cell_bottom],
-                        fill=self.cfg.TODAY_CELL_BG_COLOR,  # Highlight background
+                        fill=self.cfg.TODAY_CELL_BG_COLOR,
                         outline=self.cfg.GRID_COLOR,
                         width=2,
                     )
                 else:
-                    # Draw only the border for non-current days
                     draw.rectangle(
                         [cell_left, cell_top, cell_right, cell_bottom],
                         outline=self.cfg.GRID_COLOR,
                         width=2,
                     )
 
-                # Draw the day number (dim non-current-month days)
-                if display_day_str:
-                    day_text_color = (
-                        self.cfg.TEXT_COLOR
-                        if in_current_month
-                        else tuple(max(0, int(c * 0.5)) for c in self.cfg.TEXT_COLOR)
-                    )
-                    draw.text(
-                        (cell_left + 7, cell_top + 5),
-                        display_day_str,
-                        fill=day_text_color,
-                        font=day_font,
-                    )
+                # Draw day number
+                day_text_color = (
+                    self.cfg.TEXT_COLOR
+                    if in_current_month
+                    else tuple(max(0, int(c * 0.5)) for c in self.cfg.TEXT_COLOR)
+                )
+                draw.text(
+                    (cell_left + 7, cell_top + 5),
+                    str(actual_date.day),
+                    fill=day_text_color,
+                    font=day_font,
+                )
 
-                # Draw events for any actual_date_for_events found (current, previous, or next month)
-                if actual_date_for_events and actual_date_for_events in event_dict:
+                # Draw events
+                if actual_date in event_dict:
                     event_y_position = cell_top + 25
                     event_x_offset = 10
                     max_event_width = cell_width - 20
-                    # Use TODAY_EVENT_COLOR only if the date equals today
                     fill_color = (
                         self.cfg.TODAY_EVENT_COLOR
-                        if actual_date_for_events == today
+                        if is_current_day
                         else self.cfg.EVENT_COLOR
                     )
-                    # Optionally dim event color for non-current-month events:
-                    if not in_current_month and actual_date_for_events != today:
+                    # Dim events for non-current-month days (unless it's today)
+                    if not in_current_month and not is_current_day:
                         fill_color = tuple(max(0, int(c * 0.6)) for c in fill_color)
-                    for event in event_dict[actual_date_for_events]:
-                        wrapped_event = self.wrap_text(
+
+                    for event in event_dict[actual_date]:
+                        wrapped_lines = self.wrap_text(
                             event, max_event_width, event_font
                         )
-                        for line in wrapped_event:
+                        for line in wrapped_lines:
+                            if event_y_position + 12 > cell_bottom:
+                                logger.warning(
+                                    f"Event text overflowed in cell: {actual_date}."
+                                )
+                                break
                             draw.text(
                                 (cell_left + event_x_offset, event_y_position),
                                 line,
@@ -352,12 +348,5 @@ class CalendarImageGen:
                                 font=event_font,
                             )
                             event_y_position += 12
-                        if event_y_position > cell_bottom:
-                            logger.warning(
-                                f"Event text overflowed in cell: {actual_date_for_events}."
-                            )
+                        if event_y_position + 12 > cell_bottom:
                             break
-                else:
-                    logger.debug(
-                        f"Non-current-month or empty cell at week {week_idx}, col {day_idx}."
-                    )

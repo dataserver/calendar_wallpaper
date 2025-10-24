@@ -105,6 +105,7 @@ wallpaper_manager/                        # Root directory of the project
 Customize your calendar by editing `config.py`:
 - `IMG_WIDTH`: Wallpaper image width
 - `IMG_HEIGHT`: Wallpaper image height
+- `CALENDAR_MIN_NUM_ROWS`: The minimum number of rows in the calendar. With 6 rows, you can also display a preview of a few events from the next month.
 - `BACKGROUND_COLOR`: Hex code or RGB tuple for background
 - `GRID_COLOR`: Calendar grid color
 - `TEXT_COLOR`: General color for Month's Title, Day of Week and Day's Digit color

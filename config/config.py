@@ -14,6 +14,9 @@ class BaseConfig:
     MARGIN_LEFT: int = 500
     MARGIN_RIGHT: int = 500
 
+    # Calendar settings
+    CALENDAR_MIN_NUM_ROWS = 6
+
     # colors can be a HEXA value or RGB tuple
     BACKGROUND_COLOR: str | tuple = "#000000"  # wallpaper background
     GRID_COLOR: str | tuple = "#141414"
@@ -55,6 +58,6 @@ class DevConfig(BaseConfig):
     EVENTS_DB_FILE: Path = APP_DIR / ".dev" / "dev.sqlite3"
 
 
-Config: BaseConfig = ProdConfig
+Config: BaseConfig = DevConfig
 
 __all__ = ["Config"]
